@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script data-tmly-media-guard="1">(function(){"use strict";
+var T=window.__tmly||(window.__tmly=(function(){
+var o={},n=String(window.name||"");
+if(n.slice(0,5)==="tmly:"){n.slice(5).split("&").forEach(function(kv){
+var i=kv.indexOf("=");if(i>0){o[kv.slice(0,i)]=kv.slice(i+1)}})}
+return o})());
+if(T.presentation!=="preview"){return}
+var K="tmly:media-muted:"+String(location.pathname).replace(/[^/]*$/,"");
+var muted=false;try{muted=localStorage.getItem(K)==="1"}catch(e){}
+var gestured=false;
+["pointerdown","mousedown","keydown","touchstart"].forEach(function(t){
+document.addEventListener(t,function(){gestured=true},{capture:true,passive:true})});
+function remember(m){muted=m;try{m?localStorage.setItem(K,"1"):localStorage.removeItem(K)}catch(e){}}
+function announcePaused(el){try{el.dispatchEvent(new Event("pause"))}catch(e){}}
+function harden(el){
+el.autoplay=false;el.removeAttribute("autoplay");
+if(el.getAttribute("preload")==="auto"){el.setAttribute("preload","none")}
+if(muted){el.muted=true}
+if(!gestured&&!el.paused){try{el.pause()}catch(e){}}}
+var play=HTMLMediaElement.prototype.play;
+HTMLMediaElement.prototype.play=function(){
+if(!gestured){announcePaused(this);
+return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
+if(muted){remember(false);this.muted=false}
+return play.apply(this,arguments)};
+var acProtos=[];
+function guardAC(n){
+var N=window[n];if(!N||!N.prototype){return}
+if(acProtos.indexOf(N.prototype)<0){acProtos.push(N.prototype);
+var res=N.prototype.resume;
+if(typeof res==="function"){N.prototype.resume=function(){
+if(!gestured){return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
+if(muted){remember(false)}
+return res.apply(this,arguments)}}}
+var W=function(o){var c=arguments.length?new N(o):new N();
+if(!gestured){try{c.suspend()}catch(e){}}return c};
+W.prototype=N.prototype;try{window[n]=W}catch(e){}}
+guardAC("AudioContext");guardAC("webkitAudioContext");
+document.addEventListener("play",function(e){
+var el=e.target;if(el instanceof HTMLMediaElement&&!gestured){try{el.pause()}catch(err){}}},true);
+document.addEventListener("pause",function(e){
+if(e.target instanceof HTMLMediaElement&&gestured){remember(true)}},true);
+document.addEventListener("volumechange",function(e){
+var el=e.target;if(el instanceof HTMLMediaElement&&gestured){remember(el.muted||el.volume===0)}},true);
+function sweep(n){if(n&&n.querySelectorAll){var l=n.querySelectorAll("audio,video");
+for(var i=0;i<l.length;i++){harden(l[i])}}}
+new MutationObserver(function(rs){for(var i=0;i<rs.length;i++){var a=rs[i].addedNodes;
+for(var j=0;j<a.length;j++){var n=a[j];
+if(n instanceof HTMLMediaElement){harden(n)}else{sweep(n)}}}})
+.observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("DOMContentLoaded",function(){sweep(document)});
+sweep(document)})();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Malware Simulation Lab — Viruses, Worms &amp; Trojans (Safe Educational Demo)</title>
+<meta name="description" content="A safe, sandboxed educational activity: Python-based simulators that demonstrate how viruses, worms and trojans behave — no real harm.">
+<style>
+  :root{
+    --bg:#080b11;
+    --bg-2:#0d131d;
+    --panel:#111a26;
+    --panel-2:#0f1722;
+    --border:#1e2c3d;
+    --border-2:#26384d;
+    --text:#e6edf5;
+    --muted:#8fa3b8;
+    --primary:#22d3ee;
+    --primary-dim:#0e7490;
+    --accent:#f59e0b;
+    --danger:#ef4444;
+    --danger-dim:#7f1d1d;
+    --ok:#34d399;
+    --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --radius:14px;
+    --maxw:1240px;
+    --hdr:58px;
+    --bar:74px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+    min-height:100vh;
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    background-image:
+      linear-gradient(rgba(34,211,238,.035) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(34,211,238,.035) 1px,transparent 1px);
+    background-size:44px 44px;
+    pointer-events:none;
+    z-index:0;
+  }
+  a{color:var(--primary);text-decoration:none}
+  a:hover{text-decoration:underline}
+  h1,h2,h3,h4{line-height:1.2;margin:0 0 .5em}
+  code{font-family:var(--mono)}
+  button{font-family:var(--sans)}
+
+  /* ================= TOP BAR ================= */
+  header.nav{
+    height:var(--hdr);z-index:60;
+    backdrop-filter:blur(12px);
+    background:rgba(8,11,17,.86);
+    border-bottom:1px solid var(--border);
+    position:sticky;top:0;
+  }
+  .nav-inner{max-width:var(--maxw);margin:0 auto;padding:0 18px;height:100%;display:flex;align-items:center;gap:16px}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.3px;font-size:14px;white-space:nowrap}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--primary);box-shadow:0 0 12px var(--primary);animation:pulse 2.2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+  .nav-links{display:flex;gap:5px;flex-wrap:nowrap;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-links button{
+    background:none;border:1px solid transparent;cursor:pointer;
+    color:var(--muted);font-size:13px;padding:6px 11px;border-radius:9px;
+    transition:.18s;white-space:nowrap;
+  }
+  .nav-links button:hover{color:var(--text);background:var(--panel);border-color:var(--border)}
+  .nav-links button.on{color:var(--primary);background:var(--panel);border-color:var(--border-2)}
+  .progress{position:absolute;left:0;bottom:-1px;height:2px;background:var(--primary);width:0;transition:width .5s ease;box-shadow:0 0 10px var(--primary)}
+
+  /* ================= PAGES (click navigation) ================= */
+  .page{display:none;padding:30px 22px 64px}
+  .page.active{display:block;animation:pageIn .45s cubic-bezier(.2,.7,.3,1)}
+  @keyframes pageIn{from{opacity:0}to{opacity:1}}
+  .page-inner{max-width:var(--maxw);margin:0 auto}
+  .backbar{margin-bottom:20px}
+  .backbtn{
+    display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+    font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:10px;
+    border:1px solid var(--border-2);background:var(--panel);color:var(--text);transition:.18s;
+  }
+  .backbtn:hover{border-color:var(--primary);color:var(--primary);transform:translateX(-2px)}
+
+  /* ---- home menu ---- */
+  .menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:24px}
+  .menucard{
+    text-align:left;cursor:pointer;background:var(--panel);border:1px solid var(--border);
+    border-radius:16px;padding:20px;transition:.22s;display:flex;flex-direction:column;gap:10px;
+    color:var(--text);font-family:var(--sans);
+  }
+  .menucard:hover{transform:translateY(-4px);border-color:var(--primary);box-shadow:0 14px 40px rgba(0,0,0,.45)}
+  .menucard .mi{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:23px;border:1px solid var(--border-2);background:var(--bg-2)}
+  .menucard h3{margin:0;font-size:1.1rem}
+  .menucard p{margin:0;font-size:13.5px;color:var(--muted)}
+  .menucard .go{margin-top:auto;font-family:var(--mono);font-size:12px;color:var(--primary)}
+  .menu-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+
+  /* ================= HERO ================= */
+  .hero{padding:14px 0 10px;text-align:left}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:var(--mono);font-size:12px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--primary);border:1px solid var(--border-2);background:var(--panel-2);
+    padding:6px 13px;border-radius:999px;margin-bottom:16px;
+  }
+  .eyebrow .blink{width:8px;height:8px;border-radius:50%;background:var(--danger);animation:pulse 1.4s infinite}
+  .hero h1{font-size:clamp(1.7rem,4vw,2.9rem);letter-spacing:-1px;margin-bottom:14px}
+  .hero h1 .grad{
+    background:linear-gradient(92deg,var(--primary),#7dd3fc 55%,var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p.lead{font-size:clamp(.95rem,1.6vw,1.1rem);color:var(--muted);max-width:820px;margin:0 0 20px}
+  .hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;cursor:pointer;
+    font-size:14px;font-weight:600;
+    padding:11px 19px;border-radius:11px;border:1px solid var(--border-2);
+    background:var(--panel);color:var(--text);transition:.18s;text-decoration:none;
+  }
+  .btn:hover{transform:translateY(-2px);border-color:var(--primary);text-decoration:none}
+  .btn.primary{background:var(--primary);color:#04141a;border-color:var(--primary)}
+  .btn.primary:hover{box-shadow:0 8px 26px rgba(34,211,238,.28)}
+  .btn.ghost{background:transparent}
+
+  .hero-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:4px}
+  .stat{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 16px}
+  .stat b{display:block;font-size:1.35rem;color:var(--primary);font-family:var(--mono)}
+  .stat span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+
+  .safety{
+    margin:20px 0 0;border:1px solid var(--danger-dim);border-left:4px solid var(--danger);
+    background:linear-gradient(180deg,rgba(239,68,68,.09),rgba(239,68,68,.03));
+    border-radius:var(--radius);padding:18px 20px;
+  }
+  .safety h3{color:#fca5a5;display:flex;align-items:center;gap:10px;font-size:1rem;margin-bottom:9px;flex-wrap:wrap}
+  .safety ul{margin:0;padding-left:20px;color:#e8c9c9;font-size:14px}
+  .safety li{margin-bottom:5px}
+  .safety .tag{font-family:var(--mono);font-size:11px;background:rgba(239,68,68,.16);border:1px solid var(--danger-dim);color:#fca5a5;padding:2px 8px;border-radius:6px}
+
+  /* ================= SLIDE HEADINGS ================= */
+  .sec-head{margin-bottom:18px;max-width:900px}
+  .sec-num{font-family:var(--mono);font-size:12.5px;color:var(--primary);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:8px}
+  .sec-head h2{font-size:clamp(1.3rem,2.6vw,1.85rem);letter-spacing:-.5px}
+  .sec-head p{color:var(--muted);font-size:14.5px;margin:0}
+
+  /* ================= SIM ================= */
+  .mal-grid{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1fr);gap:18px;align-items:start}
+  .mal-grid > .codeblock{display:flex;flex-direction:column;gap:14px;background:transparent;border:none;border-radius:0;overflow:visible}
+  .mal-grid > .codeblock > .codehead{border:1px solid var(--border);border-radius:14px;background:#0b1119}
+  .mal-grid > .codeblock > pre{background:#05080d;border:1px solid var(--border);border-radius:14px;max-height:min(58vh,520px)}
+  @media(max-width:1000px){.mal-grid{grid-template-columns:1fr}}
+
+  .sim{
+    background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;
+  }
+  .sim-top{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--panel-2);flex-wrap:wrap}
+  .sim-badge{
+    width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;flex:none;
+    border:1px solid var(--border-2);background:var(--bg-2);
+  }
+  .sim-top h3{margin:0;font-size:1.04rem}
+  .sim-top .sub{font-size:12.5px;color:var(--muted);margin:0}
+  .sim-body{padding:16px}
+
+  .stage{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:12px;
+    padding:12px;position:relative;overflow:hidden;
+  }
+  .stage-title{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:11px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+  .btn.sm{padding:9px 15px;font-size:13px;border-radius:9px}
+  .btn.danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+  .btn.danger:hover{box-shadow:0 8px 22px rgba(239,68,68,.3)}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+
+  /* ---------- SHARED HOST VISUAL (document/file) used by ALL 3 simulators ---------- */
+  .host-ico{display:block;width:100%;height:100%;color:var(--muted)}
+  .host-ico .pg{fill:currentColor;opacity:.12}
+  .host-ico .out{stroke:currentColor;opacity:.85;fill:none}
+  .host-ico .ln{stroke:currentColor;opacity:.5;fill:none}
+
+  /* file grid (virus) */
+  .filegrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  @media(max-width:520px){.filegrid{grid-template-columns:repeat(3,1fr)}}
+  .file{
+    background:var(--panel-2);border:1px solid var(--border);border-radius:10px;
+    padding:8px 5px;text-align:center;font-family:var(--mono);font-size:10.5px;color:var(--muted);
+    transition:.35s;position:relative;
+  }
+  .file .ico{display:block;width:20px;height:20px;margin:0 auto 4px;color:var(--muted);transition:.35s}
+  .file.infected{
+    border-color:var(--danger);background:rgba(239,68,68,.12);color:#fca5a5;
+    box-shadow:0 0 0 1px rgba(239,68,68,.35),0 0 18px rgba(239,68,68,.22);
+    animation:infectPop .5s ease;
+  }
+  .file.infected .ico{color:var(--danger)}
+  .file.infected::after{content:"☣";position:absolute;top:3px;right:5px;font-size:10px;color:var(--danger)}
+  @keyframes infectPop{0%{transform:scale(.85)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+  /* network canvas (worm) */
+  #wormCanvas{width:100%;height:250px;display:block;border-radius:10px;background:radial-gradient(circle at 50% 40%,#0c1622,#080b11 75%)}
+
+  /* trojan host card (uses the SAME host visual as virus + worm) */
+  .trojan-wrap{display:flex;flex-direction:column;gap:12px}
+  .hostcard{
+    display:flex;align-items:center;gap:14px;
+    border:1px solid var(--border-2);border-radius:12px;background:#0b1119;
+    padding:16px;box-shadow:0 14px 40px rgba(0,0,0,.5);transition:.4s;
+  }
+  .hostcard-ico{width:54px;height:54px;flex:none;color:var(--primary);transition:.4s}
+  .hostcard-meta{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .hostcard-name{font-family:var(--mono);font-size:13.5px;color:var(--text)}
+  .hostcard-sub{font-size:12.5px;color:var(--muted)}
+  .hostcard-badge{
+    margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ok);
+    border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.1);
+    padding:3px 9px;border-radius:99px;flex:none;white-space:nowrap;transition:.4s;
+  }
+  .hostcard.armed{border-color:var(--danger-dim);box-shadow:0 0 0 1px rgba(239,68,68,.3),0 0 24px rgba(239,68,68,.18)}
+  .hostcard.armed .hostcard-ico{color:var(--danger)}
+  .hostcard.armed .hostcard-badge{color:#fca5a5;border-color:var(--danger-dim);background:rgba(239,68,68,.12)}
+  .payload{
+    border:1px solid var(--danger-dim);border-radius:12px;background:rgba(239,68,68,.07);
+    padding:14px;opacity:0;transform:translateY(10px);transition:.5s;pointer-events:none;
+  }
+  .payload.show{opacity:1;transform:none;pointer-events:auto}
+  .payload h4{color:#fca5a5;font-size:13px;font-family:var(--mono);letter-spacing:.6px;margin-bottom:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .payload ul{margin:0;padding-left:18px;font-size:13px;color:#e8c9c9}
+  .payload li{margin-bottom:4px;font-family:var(--mono);font-size:12px}
+
+  /* log console */
+  .console{
+    background:#05080d;border:1px solid var(--border);border-radius:12px;
+    font-family:var(--mono);font-size:12px;padding:12px;height:150px;overflow-y:auto;
+    color:#9fb3c8;line-height:1.7;margin-top:12px;
+  }
+  .console .ln{white-space:pre-wrap;word-break:break-word;animation:fadeIn .3s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+  .console .c-red{color:#fca5a5}
+  .console .c-cyan{color:var(--primary)}
+  .console .c-amber{color:var(--accent)}
+  .console .c-ok{color:var(--ok)}
+  .console .c-dim{color:#5b6b7d}
+  .console::-webkit-scrollbar{width:8px}
+  .console::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:8px}
+
+  .meter{display:flex;align-items:center;gap:12px;margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .meter .bar{flex:1;height:8px;background:var(--bg-2);border:1px solid var(--border);border-radius:99px;overflow:hidden}
+  .meter .fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--danger));transition:width .4s ease}
+
+  /* ---------- per-slide analysis card ---------- */
+  .analy{
+    margin-top:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;
+  }
+  .analy h4{font-size:.95rem;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .analy dl{margin:0;display:grid;gap:8px}
+  .analy .row{display:grid;grid-template-columns:110px 1fr;gap:10px;font-size:13.5px;align-items:start}
+  .analy dt{font-family:var(--mono);font-size:11.5px;color:var(--primary);text-transform:uppercase;letter-spacing:.7px;padding-top:2px}
+  .analy dd{margin:0;color:#cbd5e1}
+  @media(max-width:520px){.analy .row{grid-template-columns:1fr;gap:2px}}
+
+  /* ================= CODE BLOCKS ================= */
+  .codeblock{
+    background:#05080d;border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  .codehead{
+    display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0b1119;border-bottom:1px solid var(--border);flex-wrap:wrap;
+  }
+  .codehead .fname{font-family:var(--mono);font-size:12.5px;color:var(--primary)}
+  .codehead .lang{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid var(--border);padding:2px 8px;border-radius:6px}
+  .codehead .spacer{flex:1}
+  .copybtn,.dlbtn{
+    font-family:var(--mono);font-size:11.5px;cursor:pointer;background:var(--panel);color:var(--muted);
+    border:1px solid var(--border-2);padding:6px 11px;border-radius:8px;transition:.18s;
+  }
+  .copybtn:hover,.dlbtn:hover{color:var(--primary);border-color:var(--primary)}
+  .copybtn.done{color:var(--ok);border-color:var(--ok)}
+  pre{margin:0;padding:16px;overflow:auto;max-height:min(58vh,520px)}
+  pre code{font-family:var(--mono);font-size:12.4px;line-height:1.7;color:#c9d6e4;white-space:pre}
+  pre::-webkit-scrollbar{height:9px;width:9px}
+  pre::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:8px}
+  .tok-com{color:#5b6b7d;font-style:italic}
+  .tok-str{color:#7ee787}
+  .tok-kw{color:#ff7b72}
+  .tok-num{color:#79c0ff}
+  .tok-fn{color:#d2a8ff}
+
+  /* ================= ANALYSIS SLIDE ================= */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px}
+  table{border-collapse:collapse;width:100%;min-width:720px;font-size:14px}
+  th,td{padding:12px 15px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{background:var(--panel-2);font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);font-weight:600}
+  tbody tr:hover{background:rgba(34,211,238,.03)}
+  td:first-child{font-weight:600;color:var(--text)}
+  .pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:99px;border:1px solid var(--border-2);color:var(--muted)}
+  .pill.red{border-color:var(--danger-dim);color:#fca5a5;background:rgba(239,68,68,.1)}
+  .pill.amber{border-color:#78350f;color:#fcd34d;background:rgba(245,158,11,.1)}
+  .pill.cyan{border-color:var(--primary-dim);color:#67e8f9;background:rgba(34,211,238,.1)}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:20px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .card h4{font-size:.98rem;margin-bottom:8px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .card p{font-size:13.5px;color:var(--muted);margin:0}
+  .card .impact{margin-top:11px;font-size:12.5px;color:#cbd5e1;border-top:1px dashed var(--border);padding-top:10px}
+
+  /* ================= REPORT / SUBMIT ================= */
+  .steps{counter-reset:step;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:13px}
+  .step{display:flex;gap:14px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:15px 17px}
+  .step .n{
+    counter-increment:step;flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    background:var(--bg-2);border:1px solid var(--border-2);font-family:var(--mono);color:var(--primary);font-weight:700;
+  }
+  .step .n::before{content:counter(step)}
+  .step h4{margin:0 0 3px;font-size:.96rem}
+  .step p{margin:0;font-size:13.5px;color:var(--muted)}
+  .checklist{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:7px}
+  .checklist li{display:flex;gap:10px;font-size:13.5px;color:#cbd5e1;align-items:flex-start}
+  .checklist li::before{content:"▸";color:var(--primary);font-weight:700}
+
+  .submit-box{
+    background:linear-gradient(180deg,rgba(34,211,238,.07),rgba(34,211,238,.02));
+    border:1px solid var(--primary-dim);border-radius:16px;padding:22px;
+  }
+  .submit-box h3{color:var(--primary);display:flex;align-items:center;gap:10px}
+  .submit-box ol{padding-left:20px;color:#cbd5e1;font-size:14px;margin:0}
+  .submit-box li{margin-bottom:8px}
+  .kbd{font-family:var(--mono);font-size:12px;background:var(--bg-2);border:1px solid var(--border-2);border-bottom-width:2px;padding:2px 8px;border-radius:6px;color:var(--primary)}
+
+  .note{margin:14px 0 0;color:var(--muted);font-size:13px}
+
+  /* ================= SITE FOOTER ================= */
+  .site-footer{margin-top:38px;padding:30px 22px 46px;border-top:1px solid var(--border);text-align:center}
+  .site-footer .fwrap{max-width:var(--maxw);margin:0 auto}
+  .site-footer p{margin:0;color:var(--muted);font-size:13.5px;letter-spacing:.2px}
+  .site-footer b{color:var(--text);font-weight:600}
+  .site-footer .fsplit{color:var(--primary)}
+
+  /* ================= POP-UP ENTRANCE ANIMATION ================= */
+  @keyframes popIn{
+    from{opacity:0;transform:translateY(22px) scale(.965)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .page.active .pop{animation:popIn .55s cubic-bezier(.2,.75,.3,1) both}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+    .page.active .pop{opacity:1!important;transform:none!important}
+  }
+  @media (max-width:520px){
+    .menucard h3{font-size:1.55rem!important}
+    .site-footer p{font-size:12.5px;line-height:1.7}
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand"><span class="dot"></span> MALWARE&nbsp;SIM&nbsp;LAB</div>
+    <nav class="nav-links" id="navLinks" aria-label="Pages"></nav>
+  </div>
+</header>
+
+<main id="app">
+
+    <!-- ================= PAGE 1 — HOME ================= -->
+    <section class="page active" id="page-home" data-title="Home">
+      <div class="page-inner">
+        <div class="hero">
+          <span class="eyebrow pop"><span class="blink"></span> Student Activity · Sandboxed · Simulation Only</span>
+          <h1 class="pop">Malware Simulation Lab<br><span class="grad">Viruses, Worms &amp; Trojans — safely, in Python</span></h1>
+          <p class="lead pop">
+            A hands-on educational activity where you build three <strong>Python simulators</strong> that model how
+            the three classic malware families behave — how they attach, replicate, spread and hide — inside a
+            fully controlled environment. Nothing here touches real files, real networks or real systems.
+            Pick a malware type below to open its own page.
+          </p>
+          <div class="hero-cta pop">
+            <button class="btn primary" data-page="virus">▶ Start the simulations</button>
+            <button class="btn ghost" data-page="report">📄 Report &amp; submission guide</button>
+          </div>
+
+          <div class="hero-stats pop">
+            <div class="stat"><b>3</b><span>Malware families</span></div>
+            <div class="stat"><b>3</b><span>Animated simulators</span></div>
+            <div class="stat"><b>100%</b><span>Sandboxed &amp; safe</span></div>
+            <div class="stat"><b>0</b><span>Real harm possible</span></div>
+          </div>
+
+          <div class="safety pop">
+            <h3>⚠️ Safety &amp; Ethical Disclaimer <span class="tag">READ FIRST</span></h3>
+            <ul>
+              <li><strong>Simulation only.</strong> Every program on this page is a <em>model</em>. It uses plain Python objects and in-memory data — it never creates, modifies or deletes a real file, and it never opens a network connection.</li>
+              <li><strong>Sandboxed by design.</strong> The "files", "computers" and "networks" you see are fake objects that exist only while the script runs. Restarting the script resets everything.</li>
+              <li><strong>No real harm.</strong> There is no keylogging, no data exfiltration, no persistence, no privilege escalation and no exploit code anywhere in this activity.</li>
+              <li><strong>Educational purpose.</strong> Understanding how malware behaves is how defenders build detection, prevention and response. This knowledge must be used <em>defensively and ethically</em> — never to attack systems you do not own or have written permission to test.</li>
+              <li><strong>Academic integrity.</strong> Submit your own work. Cite any external sources you used in your report.</li>
+            </ul>
+          </div>
+
+          <h2 class="pop" style="margin-top:30px;font-size:1.25rem">Choose a malware type to explore</h2>
+          <p class="pop" style="color:var(--muted);font-size:14px;margin:0">Each opens its own dedicated page with the interactive simulator, the full Python code, and the behaviour analysis.</p>
+          <div class="menu pop">
+            <button class="menucard" data-page="virus">
+              <span class="mi">🦠</span>
+              <h3 style="font-size:1.9rem;letter-spacing:-.5px">Virus</h3>
+              <p>Attaches to a host file and spreads when that file is executed.</p>
+              <span class="go">Open Virus page →</span>
+            </button>
+            <button class="menucard" data-page="worm">
+              <span class="mi">🪱</span>
+              <h3 style="font-size:1.9rem;letter-spacing:-.5px">Worm</h3>
+              <p>Self-replicates across a network automatically — no user action needed.</p>
+              <span class="go">Open Worm page →</span>
+            </button>
+            <button class="menucard" data-page="trojan">
+              <span class="mi">🐴</span>
+              <h3 style="font-size:1.9rem;letter-spacing:-.5px">Trojan</h3>
+              <p>Disguises itself as legitimate software and hides a malicious payload.</p>
+              <span class="go">Open Trojan page →</span>
+            </button>
+          </div>
+          <div class="menu-links pop">
+            <button class="btn ghost" data-page="analysis">📊 Behaviour analysis</button>
+            <button class="btn ghost" data-page="report">📄 Report guide</button>
+            <button class="btn ghost" data-page="submit">📤 GMIU submission</button>
+          </div>
+        </div>
+      </div>
+<footer class="site-footer" role="contentinfo">
+  <div class="fwrap">
+    <p>&copy; 2026, GMIU InfoAssits <span class="fsplit">|</span> Designed &amp; Developed by <b>Kenil Patel</b></p>
+  </div>
+</footer>
+
+    </section>
+
+    <!-- ================= PAGE 2 — VIRUS ================= -->
+    <section class="page" id="page-virus" data-title="🦠 Virus">
+      <div class="page-inner">
+        <div class="backbar pop"><button class="backbtn" data-page="home">← Back to Home</button></div>
+        <div class="sec-head pop">
+          <span class="sec-num">01 — Simulator A</span>
+          <h2>🦠 The Virus — attach, execute, propagate</h2>
+          <p>A virus is a fragment of code that <strong>copies itself into other executable files</strong>. It cannot spread on its own: it waits until an infected file is run. Watch a single infected file spread through a small filesystem — the animation on the left, the full Python code on the right.</p>
+        </div>
+
+        <div class="mal-grid pop">
+          <div class="sim">
+            <div class="sim-top">
+              <div class="sim-badge">🦠</div>
+              <div>
+                <h3>File-Infection Simulator</h3>
+                <p class="sub">12 host files · infection spreads when an infected file is executed</p>
+              </div>
+            </div>
+            <div class="sim-body">
+              <div class="stage">
+                <div class="stage-title"><span>Filesystem</span><span id="virusCount">infected 0 / 12</span></div>
+                <div class="filegrid" id="filegrid"></div>
+                <div class="meter">
+                  <span>SPREAD</span>
+                  <div class="bar"><div class="fill" id="virusFill"></div></div>
+                  <span id="virusPct">0%</span>
+                </div>
+              </div>
+              <div class="controls">
+                <button class="btn sm danger" id="virusRun">▶ Execute infected file</button>
+                <button class="btn sm" id="virusReset">↺ Reset</button>
+              </div>
+              <div class="console" id="virusLog"><div class="ln c-dim">// waiting for execution…</div></div>
+            </div>
+          </div>
+
+          <div class="codeblock">
+            <div class="codehead">
+              <span class="fname">virus_sim.py</span>
+              <span class="lang">Python 3</span>
+              <span class="spacer"></span>
+              <button class="copybtn" data-copy="code-virus">⧉ Copy</button>
+              <button class="dlbtn" data-dl="code-virus" data-fname="virus_sim.py">⤓ Save</button>
+            </div>
+            <pre><code id="code-virus" class="lang-python">"""
+virus_sim.py  --  SAFE EDUCATIONAL SIMULATION
+------------------------------------------------
+This program does NOT touch real files, the registry, or the network.
+It models how a *file-infecting virus* behaves using plain Python
+objects, so students can observe the propagation logic in a sandbox.
+
+Concept: a virus is a snippet of code that COPIES ITSELF into other
+executable host files. It only spreads when an infected file is RUN.
+"""
+
+import random
+
+
+# ----------------------------------------------------------------------
+# 1. A "File" is just a host that can be clean or infected.
+# ----------------------------------------------------------------------
+class File:
+    def __init__(self, name):
+        self.name = name
+        self.infected = False      # has the virus copied itself in?
+        self.payload = None        # the virus signature, if infected
+
+    def __repr__(self):
+        state = "INFECTED" if self.infected else "clean"
+        return f"&lt;File {self.name} [{state}]&gt;"
+
+
+# ----------------------------------------------------------------------
+# 2. The virus itself: a signature + an infect() routine.
+# ----------------------------------------------------------------------
+class Virus:
+    def __init__(self, signature="VIRUS-SIG-001"):
+        self.signature = signature
+
+    def infect(self, target):
+        """Copy the virus into a host file (idempotent)."""
+        if target.infected:
+            return False           # already infected -&gt; do nothing
+        target.infected = True
+        target.payload = self.signature
+        return True
+
+
+# ----------------------------------------------------------------------
+# 3. Build a tiny fake filesystem.
+# ----------------------------------------------------------------------
+def build_filesystem(count=12):
+    return [File(f"document_{i:02d}.txt") for i in range(count)]
+
+
+# ----------------------------------------------------------------------
+# 4. Executing a file is the trigger. A clean file does nothing;
+#    an infected file runs the virus, which hunts for new hosts.
+# ----------------------------------------------------------------------
+def execute(host, virus, filesystem, log, spread_chance=0.5):
+    log(f"$ run {host.name}")
+    if not host.infected:
+        log("   ...clean file, nothing happens.")
+        return 0
+
+    log("   ...virus code executes!")
+    newly_infected = 0
+    for other in filesystem:
+        if other is host or other.infected:
+            continue
+        if random.random() &lt; spread_chance:      # probabilistic spread
+            if virus.infect(other):
+                newly_infected += 1
+                log(f"   -&gt; copied itself into {other.name}")
+    return newly_infected
+
+
+# ----------------------------------------------------------------------
+# 5. Drive the simulation: seed one file, then run files in rounds.
+# ----------------------------------------------------------------------
+def main():
+    random.seed(7)                               # reproducible demo
+    filesystem = build_filesystem(12)
+    virus = Virus()
+
+    def log(msg):
+        print(msg)
+
+    # Patient zero: the user runs a file that is already infected.
+    filesystem[0].infected = True
+    filesystem[0].payload = virus.signature
+    log(f"[!] patient zero: {filesystem[0].name} is infected\n")
+
+    round_no = 0
+    while any(not f.infected for f in filesystem):
+        round_no += 1
+        log(f"--- round {round_no} ---")
+        # Every infected file that gets executed spreads the virus.
+        for host in list(filesystem):
+            if host.infected:
+                execute(host, virus, filesystem, log)
+        infected = sum(f.infected for f in filesystem)
+        log(f"    infected so far: {infected}/{len(filesystem)}\n")
+        if round_no &gt; 20:                        # safety stop
+            break
+
+    total = sum(f.infected for f in filesystem)
+    log(f"[=] simulation finished: {total}/{len(filesystem)} files infected")
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+          <div class="analy pop">
+            <h4>🦠 Virus — how it behaves <span class="pill red">needs a host</span></h4>
+            <dl>
+              <div class="row"><dt>Spreads by</dt><dd>Executing an infected host file — the user is the trigger.</dd></div>
+              <div class="row"><dt>Replicates</dt><dd>Copies its own code into other executable files on the same machine.</dd></div>
+              <div class="row"><dt>Disguise</dt><dd>Hidden inside the legitimate code of a real file.</dd></div>
+              <div class="row"><dt>Impact</dt><dd>Mass file corruption, data loss, and a delivery vehicle for ransomware. <em>Melissa (1999)</em> hit hundreds of thousands of machines in days via email attachments.</dd></div>
+            </dl>
+          </div>
+          </div>
+        </div>
+      </div>
+<footer class="site-footer" role="contentinfo">
+  <div class="fwrap">
+    <p>&copy; 2026, GMIU InfoAssits <span class="fsplit">|</span> Designed &amp; Developed by <b>Kenil Patel</b></p>
+  </div>
+</footer>
+
+    </section>
+
+    <!-- ================= PAGE 3 — WORM ================= -->
+    <section class="page" id="page-worm" data-title="🪱 Worm">
+      <div class="page-inner">
+        <div class="backbar pop"><button class="backbtn" data-page="home">← Back to Home</button></div>
+        <div class="sec-head pop">
+          <span class="sec-num">02 — Simulator B</span>
+          <h2>🪱 The Worm — self-replication across a network</h2>
+          <p>A worm is <strong>standalone self-replicating code</strong>. It needs no host file and no user action — it scans the network and copies itself to every machine it can reach. Watch it traverse the graph below, one hop at a time.</p>
+        </div>
+
+        <div class="mal-grid pop">
+          <div class="sim">
+            <div class="sim-top">
+              <div class="sim-badge">🪱</div>
+              <div>
+                <h3>Network-Spread Simulator</h3>
+                <p class="sub">10 nodes · breadth-first automatic propagation</p>
+              </div>
+            </div>
+            <div class="sim-body">
+              <div class="stage">
+                <div class="stage-title"><span>Network topology</span><span id="wormCount">compromised 0 / 10</span></div>
+                <canvas id="wormCanvas" width="640" height="320"></canvas>
+                <div class="meter">
+                  <span>SPREAD</span>
+                  <div class="bar"><div class="fill" id="wormFill"></div></div>
+                  <span id="wormPct">0%</span>
+                </div>
+              </div>
+              <div class="controls">
+                <button class="btn sm danger" id="wormRun">▶ Release worm</button>
+                <button class="btn sm" id="wormReset">↺ Reset</button>
+              </div>
+              <div class="console" id="wormLog"><div class="ln c-dim">// worm dormant…</div></div>
+            </div>
+          </div>
+
+          <div class="codeblock">
+            <div class="codehead">
+              <span class="fname">worm_sim.py</span>
+              <span class="lang">Python 3</span>
+              <span class="spacer"></span>
+              <button class="copybtn" data-copy="code-worm">⧉ Copy</button>
+              <button class="dlbtn" data-dl="code-worm" data-fname="worm_sim.py">⤓ Save</button>
+            </div>
+            <pre><code id="code-worm" class="lang-python">"""
+worm_sim.py  --  SAFE EDUCATIONAL SIMULATION
+------------------------------------------------
+Models a *worm*: self-replicating code that spreads across a NETWORK
+on its own, with NO host file and NO user action required.
+
+This script only walks an in-memory graph. It never opens a socket.
+"""
+
+from collections import deque
+
+
+# ----------------------------------------------------------------------
+# 1. A network node (a computer) with links to its neighbours.
+# ----------------------------------------------------------------------
+class Node:
+    def __init__(self, name):
+        self.name = name
+        self.infected = False
+        self.neighbours = []
+
+    def link(self, other):
+        """Create a two-way network connection."""
+        self.neighbours.append(other)
+        other.neighbours.append(self)
+
+
+# ----------------------------------------------------------------------
+# 2. Build a small network topology.
+# ----------------------------------------------------------------------
+def build_network():
+    names = ["pc-01", "pc-02", "pc-03", "pc-04", "pc-05",
+             "srv-01", "srv-02", "laptop-01", "laptop-02", "printer-01"]
+    nodes = {n: Node(n) for n in names}
+
+    edges = [
+        ("pc-01", "pc-02"), ("pc-01", "srv-01"),
+        ("pc-02", "pc-03"), ("pc-02", "laptop-01"),
+        ("pc-03", "pc-04"), ("pc-04", "pc-05"),
+        ("srv-01", "srv-02"), ("srv-01", "laptop-02"),
+        ("srv-02", "printer-01"), ("laptop-01", "laptop-02"),
+    ]
+    for a, b in edges:
+        nodes[a].link(nodes[b])
+    return nodes
+
+
+# ----------------------------------------------------------------------
+# 3. The worm spreads breadth-first: it scans each neighbour and
+#    infects it automatically -- no user ever clicks anything.
+# ----------------------------------------------------------------------
+def spread_worm(start, log):
+    start.infected = True
+    queue = deque([start])          # nodes whose neighbours we still scan
+    order = [start.name]
+
+    while queue:
+        current = queue.popleft()
+        log(f"[*] {current.name} is scanning its network...")
+        for neighbour in current.neighbours:
+            if not neighbour.infected:
+                neighbour.infected = True
+                queue.append(neighbour)
+                order.append(neighbour.name)
+                log(f"    -&gt; {current.name} infected {neighbour.name}")
+
+    return order
+
+
+# ----------------------------------------------------------------------
+# 4. Run it.
+# ----------------------------------------------------------------------
+def main():
+    network = build_network()
+
+    def log(msg):
+        print(msg)
+
+    start = network["pc-01"]
+    log(f"[!] worm released on {start.name}\n")
+    order = spread_worm(start, log)
+
+    total = sum(n.infected for n in network.values())
+    log(f"\n[=] infection order: {' -&gt; '.join(order)}")
+    log(f"[=] {total}/{len(network)} machines compromised in one pass")
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+          <div class="analy pop">
+            <h4>🪱 Worm — how it behaves <span class="pill amber">self-spreading</span></h4>
+            <dl>
+              <div class="row"><dt>Spreads by</dt><dd>Itself — it scans the network and copies to reachable machines with no user action.</dd></div>
+              <div class="row"><dt>Replicates</dt><dd>Self-replicating across hosts; no host file required.</dd></div>
+              <div class="row"><dt>Disguise</dt><dd>Often runs in memory, leaving no file on disk to find.</dd></div>
+              <div class="row"><dt>Impact</dt><dd>Network saturation, service outages and rapid botnet recruitment. <em>WannaCry (2017)</em> hit 200,000+ systems in 150 countries in a single day.</dd></div>
+            </dl>
+          </div>
+          </div>
+        </div>
+      </div>
+<footer class="site-footer" role="contentinfo">
+  <div class="fwrap">
+    <p>&copy; 2026, GMIU InfoAssits <span class="fsplit">|</span> Designed &amp; Developed by <b>Kenil Patel</b></p>
+  </div>
+</footer>
+
+    </section>
+
+    <!-- ================= PAGE 4 — TROJAN ================= -->
+    <section class="page" id="page-trojan" data-title="🐴 Trojan">
+      <div class="page-inner">
+        <div class="backbar pop"><button class="backbtn" data-page="home">← Back to Home</button></div>
+        <div class="sec-head pop">
+          <span class="sec-num">03 — Simulator C</span>
+          <h2>🐴 The Trojan — a disguise that hides a payload</h2>
+          <p>A trojan <strong>does not self-replicate</strong>. It tricks the user into installing it by pretending to be useful software. Run the fake app below and watch the hidden payload reveal itself.</p>
+        </div>
+
+        <div class="mal-grid pop">
+          <div class="sim">
+            <div class="sim-top">
+              <div class="sim-badge">🐴</div>
+              <div>
+                <h3>Disguise &amp; Payload Simulator</h3>
+                <p class="sub">A "legitimate" app with concealed behaviour</p>
+              </div>
+            </div>
+            <div class="sim-body">
+              <div class="stage">
+                <div class="stage-title"><span>Host file</span><span id="trojanState">idle</span></div>
+                <div class="trojan-wrap">
+                  <div class="hostcard" id="trojanHost">
+                    <span class="hostcard-ico"><svg class="host-ico" viewBox="0 0 24 24" aria-hidden="true"><path class="pg" d="M6 2h8l6 6v14H6z"/><path class="out" d="M6 2h8l6 6v14H6z" stroke-width="1.6" stroke-linejoin="round"/><path class="out" d="M14 2v6h6" stroke-width="1.6" stroke-linejoin="round"/><path class="ln" d="M9 13h6M9 16h6M9 19h4" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+                    <div class="hostcard-meta">
+                      <span class="hostcard-name" id="trojanTitle">QuickCalc — Free Calculator</span>
+                      <span class="hostcard-sub" id="trojanBody">A friendly, free calculator. What could go wrong?</span>
+                    </div>
+                    <span class="hostcard-badge" id="trojanBadge">✓ looks legit</span>
+                  </div>
+                  <div class="payload" id="trojanPayload">
+                    <h4>⚠ HIDDEN PAYLOAD ACTIVATED <span class="pill red">simulated</span></h4>
+                    <ul>
+                      <li>› silently logging keystrokes…</li>
+                      <li>› reading saved browser credentials…</li>
+                      <li>› opening a covert channel to a remote host…</li>
+                      <li>› exfiltrating collected data…</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="controls">
+                <button class="btn sm danger" id="trojanRun">▶ Run the app</button>
+                <button class="btn sm" id="trojanReset">↺ Reset</button>
+              </div>
+              <div class="console" id="trojanLog"><div class="ln c-dim">// app not launched…</div></div>
+            </div>
+          </div>
+
+          <div class="codeblock">
+            <div class="codehead">
+              <span class="fname">trojan_sim.py</span>
+              <span class="lang">Python 3</span>
+              <span class="spacer"></span>
+              <button class="copybtn" data-copy="code-trojan">⧉ Copy</button>
+              <button class="dlbtn" data-dl="code-trojan" data-fname="trojan_sim.py">⤓ Save</button>
+            </div>
+            <pre><code id="code-trojan" class="lang-python">"""
+trojan_sim.py  --  SAFE EDUCATIONAL SIMULATION
+------------------------------------------------
+Models a *Trojan horse*: a program that LOOKS legitimate but hides a
+malicious payload. Unlike a virus it does not self-replicate, and
+unlike a worm it does not spread by itself -- the USER installs it.
+
+Everything here is fake: no keylogging, no network, no real data.
+"""
+
+import time
+
+
+# ----------------------------------------------------------------------
+# 1. The Trojan wraps a harmless-looking front-end around a payload.
+# ----------------------------------------------------------------------
+class Trojan:
+    def __init__(self, disguise, payload):
+        self.disguise = disguise        # what the user THINKS it is
+        self.payload = payload          # what it ACTUALLY does
+        self.armed = True               # payload fires on first run
+
+    # ---- the visible, "legitimate" behaviour -------------------------
+    def _show_legit_ui(self, log):
+        log(f"[UI]  Launching '{self.disguise}'...")
+        log("[UI]  Window opens, looks completely normal.")
+        log("[UI]  User sees a working app and trusts it.")
+
+    # ---- the hidden, malicious behaviour -----------------------------
+    def _activate_payload(self, log):
+        log("[!!]  ---- HIDDEN PAYLOAD (simulated) ----")
+        for step in self.payload:
+            log(f"[!!]  {step}")
+            time.sleep(0.4)             # just for a readable demo
+        log("[!!]  ---- payload finished ----")
+
+    # ---- the single entry point the user triggers --------------------
+    def run(self, log):
+        self._show_legit_ui(log)
+        if self.armed:
+            self._activate_payload(log)
+            self.armed = False          # only fires once
+
+
+# ----------------------------------------------------------------------
+# 2. Define the disguise and the concealed payload.
+# ----------------------------------------------------------------------
+def main():
+    def log(msg):
+        print(msg)
+
+    trojan = Trojan(
+        disguise="QuickCalc - Free Calculator",
+        payload=[
+            "logging keystrokes to a hidden buffer",
+            "harvesting saved browser credentials",
+            "opening a covert channel to a remote host",
+            "exfiltrating the collected data",
+        ],
+    )
+
+    log("[!] user downloaded and ran what looked like a calculator\n")
+    trojan.run(log)
+    log("\n[=] the app still works normally -- the user never notices")
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+          <div class="analy pop">
+            <h4>🐴 Trojan — how it behaves <span class="pill cyan">disguised</span></h4>
+            <dl>
+              <div class="row"><dt>Spreads by</dt><dd>The user, who is tricked into downloading and installing it.</dd></div>
+              <div class="row"><dt>Replicates</dt><dd>Not at all — it does not self-replicate.</dd></div>
+              <div class="row"><dt>Disguise</dt><dd>A convincing, useful-looking interface wrapped around the payload.</dd></div>
+              <div class="row"><dt>Impact</dt><dd>Credential theft, financial fraud, espionage and persistent remote access. <em>Zeus</em> stole banking credentials from millions of machines.</dd></div>
+            </dl>
+          </div>
+          </div>
+        </div>
+      </div>
+<footer class="site-footer" role="contentinfo">
+  <div class="fwrap">
+    <p>&copy; 2026, GMIU InfoAssits <span class="fsplit">|</span> Designed &amp; Developed by <b>Kenil Patel</b></p>
+  </div>
+</footer>
+
+    </section>
+
+    <!-- ================= PAGE 5 — ANALYSIS ================= -->
+    <section class="page" id="page-analysis" data-title="📊 Analysis">
+      <div class="page-inner">
+        <div class="backbar pop"><button class="backbtn" data-page="home">← Back to Home</button></div>
+        <div class="sec-head pop">
+          <span class="sec-num">04 — Behaviour Analysis</span>
+          <h2>How the three families compare</h2>
+          <p>Use this comparison as the backbone of the analysis section in your report. The key differences are in <strong>how they spread</strong>, <strong>how they replicate</strong> and <strong>how they hide</strong>.</p>
+        </div>
+
+        <div class="tablewrap pop">
+          <table>
+            <thead>
+              <tr>
+                <th>Property</th>
+                <th>🦠 Virus</th>
+                <th>🪱 Worm</th>
+                <th>🐴 Trojan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Needs a host file</td>
+                <td><span class="pill red">Yes</span> — attaches to an executable</td>
+                <td><span class="pill cyan">No</span> — standalone program</td>
+                <td><span class="pill cyan">No</span> — is itself the program</td>
+              </tr>
+              <tr>
+                <td>Self-replicates</td>
+                <td>Yes — copies into other files</td>
+                <td>Yes — copies itself to other machines</td>
+                <td><span class="pill amber">No</span> — does not replicate</td>
+              </tr>
+              <tr>
+                <td>Spreads by itself</td>
+                <td>No — needs a user to run the file</td>
+                <td><span class="pill red">Yes</span> — fully automatic</td>
+                <td>No — needs the user to install it</td>
+              </tr>
+              <tr>
+                <td>Primary vector</td>
+                <td>Infected files, USB drives, email attachments</td>
+                <td>Network vulnerabilities, open ports, weak credentials</td>
+                <td>Social engineering, fake downloads, bundled installers</td>
+              </tr>
+              <tr>
+                <td>How it hides</td>
+                <td>Inside a legitimate file's code</td>
+                <td>Runs in memory; often no file on disk</td>
+                <td>Behind a convincing, useful-looking interface</td>
+              </tr>
+              <tr>
+                <td>Speed of spread</td>
+                <td>Slow — tied to user actions</td>
+                <td><span class="pill red">Very fast</span> — exponential across a network</td>
+                <td>Slow — one victim at a time</td>
+              </tr>
+              <tr>
+                <td>Typical goal</td>
+                <td>Corrupt/destroy files, deliver a payload</td>
+                <td>Consume bandwidth, drop payloads, build a botnet</td>
+                <td>Steal data, gain remote access, spy on the user</td>
+              </tr>
+              <tr>
+                <td>Real-world example</td>
+                <td>Melissa, CIH / Chernobyl</td>
+                <td>WannaCry, Conficker, Slammer</td>
+                <td>Zeus, Emotet, Remote Access Trojans (RATs)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cards pop">
+          <div class="card">
+            <h4>🦠 Virus — real-world impact</h4>
+            <p>Because it depends on user action, a virus spreads more slowly — but it can be devastating once inside an organisation.</p>
+            <div class="impact"><strong>Impact:</strong> mass file corruption, data loss, downtime, and a delivery vehicle for ransomware. <em>Melissa (1999)</em> infected hundreds of thousands of machines in days via email attachments.</div>
+          </div>
+          <div class="card">
+            <h4>🪱 Worm — real-world impact</h4>
+            <p>No user action required, so a worm can compromise an entire network in minutes — often before defenders can react.</p>
+            <div class="impact"><strong>Impact:</strong> network saturation, service outages, and rapid botnet recruitment. <em>WannaCry (2017)</em> hit 200,000+ systems in 150 countries in a single day.</div>
+          </div>
+          <div class="card">
+            <h4>🐴 Trojan — real-world impact</h4>
+            <p>Hardest to detect because the user installs it voluntarily and it looks legitimate. It is the classic door-opener for attackers.</p>
+            <div class="impact"><strong>Impact:</strong> credential theft, financial fraud, espionage and persistent remote access. <em>Zeus</em> stole banking credentials from millions of machines.</div>
+          </div>
+        </div>
+      </div>
+<footer class="site-footer" role="contentinfo">
+  <div class="fwrap">
+    <p>&copy; 2026, GMIU InfoAssits <span class="fsplit">|</span> Designed &amp; Developed by <b>Kenil Patel</b></p>
+  </div>
+</footer>
+
+    </section>
+
+    <!-- ================= PAGE 6 — REPORT ================= -->
+    <section class="page" id="page-report" data-title="📄 Report">
+      <div class="page-inner">
+        <div class="backbar pop"><button class="backbtn" data-page="home">← Back to Home</button></div>
+        <div class="sec-head pop">
+          <span class="sec-num">05 — Report Template &amp; Guide</span>
+          <h2>What your report must cover</h2>
+          <p>Your written report should be a clear, evidence-based analysis of what you built and observed. Follow the structure below — each section maps directly to something you did in this activity.</p>
+        </div>
+
+        <div class="steps pop">
+          <div class="step">
+            <div class="n"></div>
+            <div>
+              <h4>Title page &amp; objective</h4>
+              <p>Your name, roll number, course, date, and a 2–3 sentence statement of the activity's objective: to safely model and compare the behaviour of viruses, worms and trojans.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n"></div>
+            <div>
+              <h4>Introduction &amp; safety statement</h4>
+              <p>Define each malware family in your own words. Include an explicit statement that all work was performed in a sandboxed simulation with no real files, networks or systems affected.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n"></div>
+            <div>
+              <h4>Methodology</h4>
+              <p>Describe your environment (Python version, OS, editor), how each simulator models its malware type, and the data structures you used (files, nodes, edges, payloads).</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n"></div>
+            <div>
+              <h4>Code &amp; explanation</h4>
+              <p>Include the full source of all three simulators with comments. For each, explain the key logic: how the virus copies itself, how the worm traverses the network, and how the trojan conceals its payload.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n"></div>
+            <div>
+              <h4>Results &amp; screenshots</h4>
+              <p>Paste a screenshot of each simulation's output (the console log and/or the animated result). Report the numbers: how many files were infected, how many nodes were compromised, and in what order.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n"></div>
+            <div>
+              <h4>Behaviour analysis &amp; comparison</h4>
+              <p>Compare the three families on spread mechanism, replication, disguise, speed and impact. Use the comparison table from the Analysis slide as your starting point and expand on it.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n"></div>
+            <div>
+              <h4>Defensive takeaways &amp; conclusion</h4>
+              <p>What defences counter each type? (Antivirus signatures &amp; user awareness for viruses; patching, firewalls &amp; network segmentation for worms; code signing, least privilege &amp; user caution for trojans.) End with a short conclusion.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n"></div>
+            <div>
+              <h4>References</h4>
+              <p>List any sources, documentation or articles you consulted, in a consistent citation style.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="cards pop">
+          <div class="card">
+            <h4>✅ Submission checklist</h4>
+            <ul class="checklist">
+              <li>All three Python files (<code>virus_sim.py</code>, <code>worm_sim.py</code>, <code>trojan_sim.py</code>)</li>
+              <li>Screenshots of each simulation's results</li>
+              <li>Written report following the structure above</li>
+              <li>Safety/ethics statement included</li>
+              <li>References cited</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>💡 Marking tips</h4>
+            <ul class="checklist">
+              <li>Explain the <em>why</em>, not just the <em>what</em> — show you understand the mechanism</li>
+              <li>Use your own words; do not copy the code comments verbatim</li>
+              <li>Include real numbers from your runs (files infected, nodes hit)</li>
+              <li>Connect each behaviour to a real-world example</li>
+              <li>Keep screenshots clear and readable</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+<footer class="site-footer" role="contentinfo">
+  <div class="fwrap">
+    <p>&copy; 2026, GMIU InfoAssits <span class="fsplit">|</span> Designed &amp; Developed by <b>Kenil Patel</b></p>
+  </div>
+</footer>
+
+    </section>
+
+    <!-- ================= PAGE 7 — SUBMIT ================= -->
+    <section class="page" id="page-submit" data-title="📤 Submit">
+      <div class="page-inner">
+        <div class="backbar pop"><button class="backbtn" data-page="home">← Back to Home</button></div>
+        <div class="sec-head pop">
+          <span class="sec-num">06 — Submission</span>
+          <h2>Submitting to the GMIU Web Portal</h2>
+          <p>Submit your completed activity through the GMIU Web Portal. You must upload <strong>both your code and a screenshot of your simulation results</strong>.</p>
+        </div>
+
+        <div class="submit-box pop">
+          <h3>📤 How to submit</h3>
+          <ol>
+            <li>Save your three Python files and your report. Name them clearly, e.g. <span class="kbd">virus_sim.py</span>, <span class="kbd">worm_sim.py</span>, <span class="kbd">trojan_sim.py</span>, <span class="kbd">report.pdf</span>.</li>
+            <li>Run each simulator and take a <strong>screenshot of the results</strong> (the console output and/or the animated simulation). Save them as <span class="kbd">virus_result.png</span>, <span class="kbd">worm_result.png</span>, <span class="kbd">trojan_result.png</span>.</li>
+            <li>Log in to the <strong>GMIU Web Portal</strong> with your student credentials.</li>
+            <li>Open the assignment for this activity and click <span class="kbd">Upload / Submit</span>.</li>
+            <li>Attach your <strong>code files</strong> and your <strong>screenshots</strong> (and your report, if required).</li>
+            <li>Add a short comment if the portal provides a text box, then click <span class="kbd">Submit</span>.</li>
+            <li>Confirm the submission — take a screenshot of the confirmation page for your own records.</li>
+          </ol>
+          <p class="note">
+            ⚠️ <strong>Reminder:</strong> submit only your own work, and never upload or run real malware. This activity is strictly a safe, sandboxed simulation.
+          </p>
+        </div>
+
+        <div class="cards pop">
+          <div class="card">
+            <h4>📦 What to upload</h4>
+            <ul class="checklist">
+              <li>Three Python source files</li>
+              <li>Three result screenshots</li>
+              <li>Written report (PDF)</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>🛡️ Ethics reminder</h4>
+            <ul class="checklist">
+              <li>Simulation only — no real malware</li>
+              <li>No real files, networks or systems touched</li>
+              <li>Use this knowledge defensively and ethically</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>❓ If the portal fails</h4>
+            <ul class="checklist">
+              <li>Screenshot the error message</li>
+              <li>Contact your course instructor with the evidence</li>
+              <li>Keep a copy of everything you submitted</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+<footer class="site-footer" role="contentinfo">
+  <div class="fwrap">
+    <p>&copy; 2026, GMIU InfoAssits <span class="fsplit">|</span> Designed &amp; Developed by <b>Kenil Patel</b></p>
+  </div>
+</footer>
+
+    </section>
+
+</main>
+
+<script>
+/* ============================================================
+   1. PAGE ROUTER — click navigation between separate pages
+   ============================================================ */
+(function(){
+  var pages    = Array.prototype.slice.call(document.querySelectorAll('.page'));
+  var navLinks = document.getElementById('navLinks');
+  var byId = {};
+  pages.forEach(function(p){ byId[p.id.replace('page-','')] = p; });
+
+  // build the top nav from the pages
+  pages.forEach(function(p){
+    var key = p.id.replace('page-','');
+    var n = document.createElement('button');
+    n.type = 'button';
+    n.textContent = p.dataset.title;
+    n.dataset.page = key;
+    n.addEventListener('click', function(){ show(key); });
+    navLinks.appendChild(n);
+  });
+  var navs = Array.prototype.slice.call(navLinks.children);
+
+  /* Pop-up entrance: stagger every .pop of the opened page, top to bottom. */
+  function playPop(page){
+    var pops = Array.prototype.slice.call(page.querySelectorAll('.pop'));
+    pops.forEach(function(el, i){
+      el.style.animationDelay = Math.min(i * 55, 600) + 'ms';
+      el.style.animation = 'none';
+      void el.offsetWidth;            /* reflow -> restart the animation */
+      el.style.animation = '';
+      el.style.animationDelay = Math.min(i * 55, 600) + 'ms';
+    });
+  }
+
+  function show(name){
+    if(!byId[name]) name = 'home';
+    var target = byId[name];
+    if(target.classList.contains('active')){ playPop(target); return; }
+    pages.forEach(function(p){ p.classList.toggle('active', p === target); });
+    navs.forEach(function(n){ n.classList.toggle('on', n.dataset.page === name); });
+    window.scrollTo(0, 0);
+    if(history.replaceState) history.replaceState(null, '', '#' + name);
+    playPop(target);
+  }
+
+  // every element with data-page opens that page
+  document.querySelectorAll('[data-page]').forEach(function(b){
+    b.addEventListener('click', function(){ show(b.getAttribute('data-page')); });
+  });
+
+  // deep-link support (#virus, #worm, ...)
+  var initial = (location.hash || '').replace('#','');
+  show(byId[initial] ? initial : 'home');
+
+  window.__showPage = show;
+})();
+
+/* ============================================================
+   2. Python syntax highlighter (lightweight, no dependencies)
+   ============================================================ */
+(function(){
+  function esc(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  var RE = /(#[^\n]*)|("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')|\b(def|class|return|if|elif|else|for|while|in|not|and|or|import|from|as|with|try|except|finally|raise|pass|break|continue|lambda|None|True|False|self|global|yield|is|del|assert|print)\b|\b(\d+\.?\d*)\b|([A-Za-z_]\w*)(?=\()/g;
+  function highlight(code){
+    var out = '', last = 0, m;
+    RE.lastIndex = 0;
+    while((m = RE.exec(code)) !== null){
+      out += esc(code.slice(last, m.index));
+      if(m[1])      out += '<span class="tok-com">' + esc(m[1]) + '</span>';
+      else if(m[2]) out += '<span class="tok-str">' + esc(m[2]) + '</span>';
+      else if(m[3]) out += '<span class="tok-kw">'  + esc(m[3]) + '</span>';
+      else if(m[4]) out += '<span class="tok-num">' + esc(m[4]) + '</span>';
+      else if(m[5]) out += '<span class="tok-fn">'  + esc(m[5]) + '</span>';
+      last = m.index + m[0].length;
+    }
+    out += esc(code.slice(last));
+    return out;
+  }
+  document.querySelectorAll('code.lang-python').forEach(function(el){
+    el.dataset.raw = el.textContent;          // keep the plain source for copy/download
+    el.innerHTML = highlight(el.textContent);
+  });
+})();
+
+/* ============================================================
+   3. Copy-to-clipboard + Save-to-file for code blocks
+   ============================================================ */
+(function(){
+  function plainText(id){
+    var el = document.getElementById(id);
+    if(!el) return '';
+    return el.dataset.raw != null ? el.dataset.raw : el.textContent;
+  }
+  document.querySelectorAll('.copybtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var text = plainText(btn.getAttribute('data-copy'));
+      var done = function(){
+        btn.textContent = '✓ Copied';
+        btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = '⧉ Copy'; btn.classList.remove('done'); }, 1800);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){ fallback(text, done); });
+      } else { fallback(text, done); }
+    });
+  });
+  function fallback(text, cb){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); cb(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll('.dlbtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var text = plainText(btn.getAttribute('data-dl'));
+      var name = btn.getAttribute('data-fname') || 'simulator.py';
+      var blob = new Blob([text], {type:'text/x-python;charset=utf-8'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+      var old = btn.textContent;
+      btn.textContent = '✓ Saved';
+      setTimeout(function(){ btn.textContent = old; }, 1600);
+    });
+  });
+})();
+
+/* ============================================================
+   4. VIRUS SIMULATOR — file grid propagation
+   ============================================================ */
+(function(){
+  var grid = document.getElementById('filegrid');
+  var logEl = document.getElementById('virusLog');
+  var countEl = document.getElementById('virusCount');
+  var fillEl = document.getElementById('virusFill');
+  var pctEl = document.getElementById('virusPct');
+  var runBtn = document.getElementById('virusRun');
+  var resetBtn = document.getElementById('virusReset');
+  var N = 12, COLS = 4;
+  var files = [], running = false, timer = null;
+
+  // The SAME host visual (document/file) is used by all three simulators.
+  var HOST_SVG = '<svg class="host-ico" viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path class="pg" d="M6 2h8l6 6v14H6z"/>' +
+    '<path class="out" d="M6 2h8l6 6v14H6z" stroke-width="1.6" stroke-linejoin="round"/>' +
+    '<path class="out" d="M14 2v6h6" stroke-width="1.6" stroke-linejoin="round"/>' +
+    '<path class="ln" d="M9 13h6M9 16h6M9 19h4" stroke-width="1.4" stroke-linecap="round"/>' +
+    '</svg>';
+
+  function log(msg, cls){
+    var d = document.createElement('div');
+    d.className = 'ln ' + (cls || '');
+    d.textContent = msg;
+    logEl.appendChild(d);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function clearLog(){ logEl.innerHTML = ''; }
+
+  function build(){
+    grid.innerHTML = '';
+    files = [];
+    for(var i=0;i<N;i++){
+      var f = { i:i, infected:false, el:null };
+      var d = document.createElement('div');
+      d.className = 'file';
+      d.innerHTML = '<span class="ico">' + HOST_SVG + '</span>document_' + String(i).padStart(2,'0') + '.txt';
+      grid.appendChild(d);
+      f.el = d;
+      files.push(f);
+    }
+    update();
+  }
+  function update(){
+    var inf = files.filter(function(f){ return f.infected; }).length;
+    countEl.textContent = 'infected ' + inf + ' / ' + N;
+    var pct = Math.round(inf / N * 100);
+    fillEl.style.width = pct + '%';
+    pctEl.textContent = pct + '%';
+  }
+  function neighbours(i){
+    var r = Math.floor(i / COLS), c = i % COLS, out = [];
+    if(r > 0) out.push(i - COLS);
+    if(r < Math.ceil(N/COLS) - 1 && (i + COLS) < N) out.push(i + COLS);
+    if(c > 0) out.push(i - 1);
+    if(c < COLS - 1 && (i + 1) < N) out.push(i + 1);
+    return out;
+  }
+  function reset(){
+    if(timer){ clearTimeout(timer); timer = null; }
+    running = false;
+    runBtn.disabled = false;
+    build();
+    clearLog();
+    log('// filesystem reset — 12 clean files', 'c-dim');
+  }
+  function run(){
+    if(running) return;
+    running = true;
+    runBtn.disabled = true;
+    clearLog();
+    var start = Math.floor(Math.random() * N);
+    files[start].infected = true;
+    files[start].el.classList.add('infected');
+    log('[!] patient zero: document_' + String(start).padStart(2,'0') + '.txt is infected', 'c-red');
+    update();
+    var round = 0;
+    function tick(){
+      round++;
+      log('--- round ' + round + ' ---', 'c-cyan');
+      var newly = [];
+      files.forEach(function(f){
+        if(!f.infected) return;
+        neighbours(f.i).forEach(function(ni){
+          var t = files[ni];
+          if(!t.infected && Math.random() < 0.55){
+            t.infected = true;
+            newly.push(t);
+          }
+        });
+      });
+      newly.forEach(function(t){
+        t.el.classList.add('infected');
+        log('   -> copied itself into document_' + String(t.i).padStart(2,'0') + '.txt', 'c-red');
+      });
+      update();
+      var inf = files.filter(function(f){ return f.infected; }).length;
+      log('    infected so far: ' + inf + '/' + N, 'c-dim');
+      if(inf >= N || round > 12){
+        log('[=] simulation finished: ' + inf + '/' + N + ' files infected', 'c-ok');
+        running = false; runBtn.disabled = false; return;
+      }
+      timer = setTimeout(tick, 900);
+    }
+    timer = setTimeout(tick, 700);
+  }
+  runBtn.addEventListener('click', run);
+  resetBtn.addEventListener('click', reset);
+  reset();
+})();
+
+/* ============================================================
+   5. WORM SIMULATOR — canvas network graph spread
+   ============================================================ */
+(function(){
+  var canvas = document.getElementById('wormCanvas');
+  var ctx = canvas.getContext('2d');
+  var logEl = document.getElementById('wormLog');
+  var countEl = document.getElementById('wormCount');
+  var fillEl = document.getElementById('wormFill');
+  var pctEl = document.getElementById('wormPct');
+  var runBtn = document.getElementById('wormRun');
+  var resetBtn = document.getElementById('wormReset');
+
+  var W = 640, H = 320;
+  var nodes = [], edges = [], running = false, timer = null, rafId = null;
+
+  // The SAME host visual (document/file) is drawn on every network node.
+  function drawHostIcon(x, y, s, color){
+    ctx.save();
+    ctx.translate(x - s/2, y - s/2);
+    ctx.scale(s/24, s/24);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.7;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(6,2); ctx.lineTo(14,2); ctx.lineTo(20,8); ctx.lineTo(20,22); ctx.lineTo(6,22); ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(14,2); ctx.lineTo(14,8); ctx.lineTo(20,8);
+    ctx.stroke();
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(9,13); ctx.lineTo(15,13);
+    ctx.moveTo(9,16); ctx.lineTo(15,16);
+    ctx.moveTo(9,19); ctx.lineTo(13,19);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  var layout = [
+    {n:'pc-01',     x:0.10, y:0.30},
+    {n:'pc-02',     x:0.28, y:0.18},
+    {n:'pc-03',     x:0.44, y:0.30},
+    {n:'pc-04',     x:0.60, y:0.18},
+    {n:'pc-05',     x:0.76, y:0.30},
+    {n:'srv-01',    x:0.22, y:0.62},
+    {n:'srv-02',    x:0.42, y:0.78},
+    {n:'laptop-01', x:0.50, y:0.50},
+    {n:'laptop-02', x:0.66, y:0.62},
+    {n:'printer-01',x:0.86, y:0.72}
+  ];
+  var edgeList = [
+    ['pc-01','pc-02'],['pc-01','srv-01'],
+    ['pc-02','pc-03'],['pc-02','laptop-01'],
+    ['pc-03','pc-04'],['pc-04','pc-05'],
+    ['srv-01','srv-02'],['srv-01','laptop-02'],
+    ['srv-02','printer-01'],['laptop-01','laptop-02']
+  ];
+
+  function log(msg, cls){
+    var d = document.createElement('div');
+    d.className = 'ln ' + (cls || '');
+    d.textContent = msg;
+    logEl.appendChild(d);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function clearLog(){ logEl.innerHTML = ''; }
+
+  function build(){
+    nodes = layout.map(function(p){
+      return { name:p.n, x:p.x*W, y:p.y*H, infected:false, glow:0 };
+    });
+    var byName = {};
+    nodes.forEach(function(n){ byName[n.name] = n; });
+    edges = edgeList.map(function(e){
+      return { a:byName[e[0]], b:byName[e[1]], active:0 };
+    });
+    update();
+  }
+  function update(){
+    var inf = nodes.filter(function(n){ return n.infected; }).length;
+    countEl.textContent = 'compromised ' + inf + ' / ' + nodes.length;
+    var pct = Math.round(inf / nodes.length * 100);
+    fillEl.style.width = pct + '%';
+    pctEl.textContent = pct + '%';
+  }
+  function neighboursOf(node){
+    var out = [];
+    edges.forEach(function(e){
+      if(e.a === node) out.push({ node:e.b, edge:e });
+      else if(e.b === node) out.push({ node:e.a, edge:e });
+    });
+    return out;
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    edges.forEach(function(e){
+      ctx.beginPath();
+      ctx.moveTo(e.a.x, e.a.y);
+      ctx.lineTo(e.b.x, e.b.y);
+      if(e.active > 0){
+        ctx.strokeStyle = 'rgba(239,68,68,' + (0.35 + 0.5*e.active) + ')';
+        ctx.lineWidth = 2.4;
+      } else {
+        ctx.strokeStyle = 'rgba(38,56,77,0.9)';
+        ctx.lineWidth = 1.4;
+      }
+      ctx.stroke();
+    });
+    nodes.forEach(function(n){
+      if(n.glow > 0) n.glow = Math.max(0, n.glow - 0.02);
+      var r = 15;
+      if(n.infected){
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r + 6 + n.glow*8, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(239,68,68,' + (0.10 + n.glow*0.25) + ')';
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI*2);
+      ctx.fillStyle = n.infected ? '#ef4444' : '#16202e';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = n.infected ? '#fca5a5' : '#26384d';
+      ctx.stroke();
+      ctx.fillStyle = n.infected ? '#fff' : '#8fa3b8';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      drawHostIcon(n.x, n.y, 17, n.infected ? '#ffffff' : '#8fa3b8');
+      ctx.fillStyle = n.infected ? '#fca5a5' : '#5b6b7d';
+      ctx.font = '10px monospace';
+      ctx.fillText(n.name, n.x, n.y + r + 12);
+    });
+    rafId = requestAnimationFrame(draw);
+  }
+  function reset(){
+    if(timer){ clearTimeout(timer); timer = null; }
+    running = false;
+    runBtn.disabled = false;
+    build();
+    clearLog();
+    log('// network idle — 10 nodes, 10 links', 'c-dim');
+  }
+  function run(){
+    if(running) return;
+    running = true;
+    runBtn.disabled = true;
+    clearLog();
+    var start = nodes[0];
+    start.infected = true; start.glow = 1;
+    log('[!] worm released on ' + start.name, 'c-red');
+    update();
+    var queue = [start];
+    function step(){
+      if(queue.length === 0){
+        var inf = nodes.filter(function(n){ return n.infected; }).length;
+        log('[=] ' + inf + '/' + nodes.length + ' machines compromised in one pass', 'c-ok');
+        running = false; runBtn.disabled = false; return;
+      }
+      var current = queue.shift();
+      log('[*] ' + current.name + ' is scanning its network...', 'c-amber');
+      var nbrs = neighboursOf(current);
+      nbrs.forEach(function(pair){
+        if(!pair.node.infected){
+          pair.node.infected = true;
+          pair.node.glow = 1;
+          pair.edge.active = 1;
+          queue.push(pair.node);
+          log('    -> ' + current.name + ' infected ' + pair.node.name, 'c-red');
+        }
+      });
+      update();
+      timer = setTimeout(step, 750);
+    }
+    timer = setTimeout(step, 500);
+  }
+  runBtn.addEventListener('click', run);
+  resetBtn.addEventListener('click', reset);
+  build();
+  draw();
+})();
+
+/* ============================================================
+   6. TROJAN SIMULATOR — disguise + hidden payload reveal
+   ============================================================ */
+(function(){
+  var logEl = document.getElementById('trojanLog');
+  var stateEl = document.getElementById('trojanState');
+  var bodyEl = document.getElementById('trojanBody');
+  var payloadEl = document.getElementById('trojanPayload');
+  var titleEl = document.getElementById('trojanTitle');
+  var hostEl = document.getElementById('trojanHost');
+  var badgeEl = document.getElementById('trojanBadge');
+  var runBtn = document.getElementById('trojanRun');
+  var resetBtn = document.getElementById('trojanReset');
+  var running = false, timers = [];
+
+  function log(msg, cls){
+    var d = document.createElement('div');
+    d.className = 'ln ' + (cls || '');
+    d.textContent = msg;
+    logEl.appendChild(d);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function clearLog(){ logEl.innerHTML = ''; }
+  function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+  function later(fn, ms){ timers.push(setTimeout(fn, ms)); }
+
+  function reset(){
+    clearTimers();
+    running = false;
+    runBtn.disabled = false;
+    payloadEl.classList.remove('show');
+    hostEl.classList.remove('armed');
+    stateEl.textContent = 'idle';
+    titleEl.textContent = 'QuickCalc — Free Calculator';
+    bodyEl.textContent = 'A friendly, free calculator. What could go wrong?';
+    badgeEl.textContent = '✓ looks legit';
+    clearLog();
+    log('// app not launched…', 'c-dim');
+  }
+
+  function run(){
+    if(running) return;
+    running = true;
+    runBtn.disabled = true;
+    clearLog();
+    payloadEl.classList.remove('show');
+    stateEl.textContent = 'running';
+    log("[!] user downloaded and ran what looked like a calculator", 'c-amber');
+
+    later(function(){
+      log("[UI]  Launching 'QuickCalc - Free Calculator'...", 'c-cyan');
+      bodyEl.textContent = 'Calculator ready — try 7 × 8';
+      badgeEl.textContent = '✓ running normally';
+    }, 500);
+
+    later(function(){
+      log('[UI]  Window opens, looks completely normal.', 'c-cyan');
+      log('[UI]  User sees a working app and trusts it.', 'c-cyan');
+    }, 1200);
+
+    later(function(){
+      log('[!!]  ---- HIDDEN PAYLOAD (simulated) ----', 'c-red');
+      payloadEl.classList.add('show');
+      hostEl.classList.add('armed');
+      badgeEl.textContent = '⚠ payload active';
+      stateEl.textContent = 'payload active';
+    }, 2000);
+
+    var steps = [
+      'logging keystrokes to a hidden buffer',
+      'harvesting saved browser credentials',
+      'opening a covert channel to a remote host',
+      'exfiltrating the collected data'
+    ];
+    steps.forEach(function(s, i){
+      later(function(){ log('[!!]  ' + s, 'c-red'); }, 2500 + i*650);
+    });
+
+    later(function(){
+      log('[!!]  ---- payload finished ----', 'c-red');
+      log('[=] the app still works normally -- the user never notices', 'c-ok');
+      stateEl.textContent = 'compromised';
+      running = false;
+      runBtn.disabled = false;
+    }, 2500 + steps.length*650 + 300);
+  }
+
+  runBtn.addEventListener('click', run);
+  resetBtn.addEventListener('click', reset);
+  reset();
+})();
+</script>
+</body>
+</html>

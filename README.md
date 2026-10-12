@@ -1,1 +1,1 @@
-# CNS-AlA-2-walware-analyzer
+https://malware-analyze.netlify.app
